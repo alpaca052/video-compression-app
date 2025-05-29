@@ -2,7 +2,33 @@
     <v-app>
         <v-main>
             <v-container class="pa-4">
-                <h1 class="text-h5 mb-4">動画圧縮ツール</h1>
+                <div class="d-flex justify-end mb-4">
+                    <v-card elevation="1" class="pa-2" style="max-width: 180px">
+                        <v-row align="center">
+                            <v-col cols="auto">
+                                <v-icon>mdi-translate</v-icon>
+                            </v-col>
+                            <v-col>
+                                <v-select
+                                    v-model="locale"
+                                    :items="[
+                                        { title: 'English', value: 'en' },
+                                        { title: '日本語', value: 'ja' }
+                                    ]"
+                                    item-title="title"
+                                    item-value="value"
+                                    density="compact"
+                                    hide-details
+                                    variant="outlined"
+                                    @update:modelValue="changeLocale"
+                                />
+                            </v-col>
+                        </v-row>
+                    </v-card>
+                </div>
+
+
+                <h1 class="text-h5 mb-4">{{ $t('title') }}</h1>
 
                 <!-- アップロードエリア -->
                 <v-card
@@ -14,8 +40,8 @@
                     @dragover.prevent="handleDragOver"
                     @dragleave="handleDragLeave"
                 >
-                    <div class="text-subtitle-1">動画をドラッグ＆ドロップ、または</div>
-                    <v-btn color="primary" @click="triggerFileSelect">ファイルを選択</v-btn>
+                    <div class="text-subtitle-1">{{ $t('dropMessage') }}</div>
+                    <v-btn color="primary" @click="triggerFileSelect">{{ $t('selectFile') }}</v-btn>
                     <input
                         ref="fileInput"
                         type="file"
@@ -25,12 +51,12 @@
                     />
                 </v-card>
 
-                <!-- ファイル情報表示 -->
-                <div v-if="file" class="mb-2">選択中: {{ file.name }}</div>
+                <!-- ファイル名と情報の表示 -->
+                <div v-if="file" class="mb-2">{{ $t('selected') }}: {{ file.name }}</div>
                 <div v-if="file" class="mb-4 text-caption text-grey">
-                    サイズ: {{ (file.size / (1024 * 1024)).toFixed(2) }} MB<br>
-                    解像度: {{ originalResolution ?? '取得中...' }}<br>
-                    ビットレート: {{ originalBitrate ?? '取得中...' }}
+                    {{ $t('size') }}: {{ (file.size / (1024 * 1024)).toFixed(2) }} MB<br />
+                    {{ $t('originalResolution') }}: {{ originalResolution ?? $t('fetching') }}<br />
+                    {{ $t('originalBitrate') }}: {{ originalBitrate ?? $t('fetching') }}
                 </div>
 
                 <!-- 圧縮設定 -->
@@ -40,14 +66,14 @@
                             <v-select
                                 v-model="resolution"
                                 :items="['1920x1080', '1280x720', '854x480']"
-                                label="解像度"
+                                :label="$t('resolution')"
                             />
                         </v-col>
                         <v-col cols="12" sm="6">
                             <v-select
                                 v-model="bitrate"
                                 :items="['3000k', '1500k', '800k']"
-                                label="ビットレート"
+                                :label="$t('bitrate')"
                             />
                         </v-col>
                     </v-row>
@@ -59,7 +85,7 @@
                     :disabled="!file"
                     @click="startCompression"
                 >
-                    圧縮開始
+                    {{ $t('compress') }}
                 </v-btn>
 
                 <!-- 結果 -->
@@ -71,10 +97,10 @@
                         :href="compressedUrl"
                         download="compressed.mp4"
                     >
-                        ダウンロード
+                        {{ $t('downloading') }}
                     </v-btn>
                     <div class="mt-2" v-if="compressedSize !== null">
-                        圧縮後のサイズ：{{ (compressedSize / (1024 * 1024)).toFixed(2) }} MB
+                        {{ $t('sizeAfter') }}：{{ (compressedSize / (1024 * 1024)).toFixed(2) }} MB
                     </div>
                 </div>
             </v-container>
@@ -84,14 +110,19 @@
     <v-dialog v-model="loading" persistent width="300">
         <v-card class="pa-4">
             <v-progress-circular indeterminate color="primary" />
-            <div class="mt-4 text-center">圧縮中です…</div>
+            <div class="mt-4 text-center">{{ $t('loading') }}</div>
         </v-card>
     </v-dialog>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg'
+
+const { t, locale } = useI18n()
+const availableLocales = ['en', 'ja']
+const changeLocale = (val: string) => locale.value = val
 
 const file = ref<File | null>(null)
 const resolution = ref('1280x720')
@@ -128,14 +159,11 @@ const handleFileChange = async () => {
             const inputFileName = 'probe_input.mp4'
             ffmpeg.FS('writeFile', inputFileName, await fetchFile(selectedFile))
 
-            // 情報を抽出する
             const logs: string[] = []
             ffmpeg.setLogger(({ message }) => logs.push(message))
             try {
                 await ffmpeg.run('-i', inputFileName)
-            } catch (e) {
-                // run はエラーになるがログは出るので無視して良い
-            }
+            } catch (e) {}
 
             const videoLog = logs.find(msg => msg.includes('Stream') && msg.includes('Video'))
             if (videoLog) {
@@ -153,6 +181,7 @@ const handleFileChange = async () => {
             ffmpeg.FS('unlink', inputFileName)
         } catch (err) {
             console.error('メタ情報の取得失敗:', err)
+            alert(t('errorMeta'))
         }
     }
 }
@@ -175,7 +204,7 @@ const handleDrop = (e: DragEvent) => {
             file.value = droppedFile
             handleFileChange()
         } else {
-            alert('動画ファイルをドロップしてください')
+            alert(t('errorFileType'))
         }
     }
 }
@@ -214,7 +243,7 @@ const startCompression = async () => {
         compressedSize.value = videoBlob.size
     } catch (err) {
         console.error('圧縮エラー:', err)
-        alert('圧縮に失敗しました')
+        alert(t('errorCompress'))
     } finally {
         loading.value = false
     }

@@ -1,0 +1,19 @@
+{
+    "title": "動画圧縮ツール",
+    "dropMessage": "動画をドラッグ＆ドロップ、または",
+    "selectFile": "ファイルを選択",
+    "selected": "選択中",
+    "size": "サイズ",
+    "originalResolution": "元の解像度",
+    "originalBitrate": "元のビットレート",
+    "fetching": "取得中...",
+    "resolution": "解像度",
+    "bitrate": "ビットレート",
+    "compress": "圧縮開始",
+    "downloading": "ダウンロード",
+    "sizeAfter": "圧縮後のサイズ",
+    "loading": "圧縮中です…",
+    "errorMeta": "動画のメタ情報の取得に失敗しました。",
+    "errorFileType": "有効な動画ファイルをドロップしてください。",
+    "errorCompress": "圧縮に失敗しました。"
+}

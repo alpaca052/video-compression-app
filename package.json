@@ -12,8 +12,10 @@
     "@ffmpeg/core": "^0.10.0",
     "@ffmpeg/ffmpeg": "^0.10.1",
     "@ffmpeg/util": "^0.12.2",
+    "@mdi/font": "^7.4.47",
     "sass": "^1.89.0",
     "vue": "^3.5.13",
+    "vue-i18n": "^11.1.5",
     "vuetify": "^3.8.7"
   },
   "devDependencies": {

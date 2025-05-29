@@ -1,0 +1,19 @@
+{
+    "title": "Video Compression Tool",
+    "dropMessage": "Drag & drop a video or",
+    "selectFile": "Select a File",
+    "selected": "Selected",
+    "size": "Size",
+    "originalResolution": "Original Resolution",
+    "originalBitrate": "Original Bitrate",
+    "fetching": "Fetching...",
+    "resolution": "Resolution",
+    "bitrate": "Bitrate",
+    "compress": "Start Compression",
+    "downloading": "Download",
+    "sizeAfter": "Compressed Size",
+    "loading": "Compressing...",
+    "errorMeta": "Failed to retrieve video metadata.",
+    "errorFileType": "Please drop a valid video file.",
+    "errorCompress": "Compression failed."
+}
