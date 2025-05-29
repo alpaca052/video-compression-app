@@ -144,45 +144,49 @@ const triggerFileSelect = () => {
     fileInput.value?.click()
 }
 
-const handleFileChange = async () => {
+const processFile = async (selectedFile: File) => {
+    file.value = selectedFile
+    originalResolution.value = null
+    originalBitrate.value = null
+
+    try {
+        if (!ffmpeg.isLoaded()) {
+            await ffmpeg.load()
+        }
+
+        const inputFileName = 'probe_input.mp4'
+        ffmpeg.FS('writeFile', inputFileName, await fetchFile(selectedFile))
+
+        const logs: string[] = []
+        ffmpeg.setLogger(({ message }) => logs.push(message))
+        try {
+            await ffmpeg.run('-i', inputFileName)
+        } catch (e) {}
+
+        const videoLog = logs.find(msg => msg.includes('Stream') && msg.includes('Video'))
+        if (videoLog) {
+            const resMatch = videoLog.match(/(\d{2,5})x(\d{2,5})/)
+            const bitrateMatch = videoLog.match(/(\d+) kb\/s/)
+
+            if (resMatch) {
+                originalResolution.value = `${resMatch[1]}x${resMatch[2]}`
+            }
+            if (bitrateMatch) {
+                originalBitrate.value = `${bitrateMatch[1]} kb/s`
+            }
+        }
+
+        ffmpeg.FS('unlink', inputFileName)
+    } catch (err) {
+        console.error('メタ情報の取得失敗:', err)
+        alert(t('errorMeta'))
+    }
+}
+
+const handleFileChange = () => {
     const selectedFile = fileInput.value?.files?.[0]
     if (selectedFile) {
-        file.value = selectedFile
-        originalResolution.value = null
-        originalBitrate.value = null
-
-        try {
-            if (!ffmpeg.isLoaded()) {
-                await ffmpeg.load()
-            }
-
-            const inputFileName = 'probe_input.mp4'
-            ffmpeg.FS('writeFile', inputFileName, await fetchFile(selectedFile))
-
-            const logs: string[] = []
-            ffmpeg.setLogger(({ message }) => logs.push(message))
-            try {
-                await ffmpeg.run('-i', inputFileName)
-            } catch (e) {}
-
-            const videoLog = logs.find(msg => msg.includes('Stream') && msg.includes('Video'))
-            if (videoLog) {
-                const resMatch = videoLog.match(/(\d{2,5})x(\d{2,5})/)
-                const bitrateMatch = videoLog.match(/(\d+) kb\/s/)
-
-                if (resMatch) {
-                    originalResolution.value = `${resMatch[1]}x${resMatch[2]}`
-                }
-                if (bitrateMatch) {
-                    originalBitrate.value = `${bitrateMatch[1]} kb/s`
-                }
-            }
-
-            ffmpeg.FS('unlink', inputFileName)
-        } catch (err) {
-            console.error('メタ情報の取得失敗:', err)
-            alert(t('errorMeta'))
-        }
+        processFile(selectedFile)
     }
 }
 
@@ -201,8 +205,7 @@ const handleDrop = (e: DragEvent) => {
     if (e.dataTransfer && e.dataTransfer.files.length > 0) {
         const droppedFile = e.dataTransfer.files[0]
         if (droppedFile.type.startsWith('video/')) {
-            file.value = droppedFile
-            handleFileChange()
+            processFile(droppedFile)
         } else {
             alert(t('errorFileType'))
         }
