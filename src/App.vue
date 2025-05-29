@@ -3,7 +3,7 @@
         <v-main>
             <v-container class="pa-4">
                 <div class="d-flex justify-end mb-4">
-                    <v-card elevation="1" class="pa-2" style="max-width: 180px">
+                    <v-card elevation="1" class="pa-2" style="max-width: 300px">
                         <v-row align="center">
                             <v-col cols="auto">
                                 <v-icon>mdi-translate</v-icon>
