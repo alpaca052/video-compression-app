@@ -137,7 +137,7 @@ const loading = ref(false)
 
 const ffmpeg = createFFmpeg({
     log: true,
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
+    corePath: '/ffmpeg-core/ffmpeg-core.js'
 })
 
 const triggerFileSelect = () => {
