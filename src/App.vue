@@ -25,8 +25,13 @@
                     />
                 </v-card>
 
-                <!-- ファイル名の表示 -->
-                <div v-if="file" class="mb-4">選択中: {{ file.name }}</div>
+                <!-- ファイル情報表示 -->
+                <div v-if="file" class="mb-2">選択中: {{ file.name }}</div>
+                <div v-if="file" class="mb-4 text-caption text-grey">
+                    サイズ: {{ (file.size / (1024 * 1024)).toFixed(2) }} MB<br>
+                    解像度: {{ originalResolution ?? '取得中...' }}<br>
+                    ビットレート: {{ originalBitrate ?? '取得中...' }}
+                </div>
 
                 <!-- 圧縮設定 -->
                 <v-card class="mb-4 pa-4" outlined>
@@ -93,18 +98,62 @@ const resolution = ref('1280x720')
 const bitrate = ref('1500k')
 const compressedUrl = ref<string | null>(null)
 const compressedSize = ref<number | null>(null)
+const originalResolution = ref<string | null>(null)
+const originalBitrate = ref<string | null>(null)
 const isDragging = ref(false)
-
 const fileInput = ref<HTMLInputElement | null>(null)
+const loading = ref(false)
+
+const ffmpeg = createFFmpeg({
+    log: true,
+    corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
+})
 
 const triggerFileSelect = () => {
     fileInput.value?.click()
 }
 
-const handleFileChange = () => {
+const handleFileChange = async () => {
     const selectedFile = fileInput.value?.files?.[0]
     if (selectedFile) {
         file.value = selectedFile
+        originalResolution.value = null
+        originalBitrate.value = null
+
+        try {
+            if (!ffmpeg.isLoaded()) {
+                await ffmpeg.load()
+            }
+
+            const inputFileName = 'probe_input.mp4'
+            ffmpeg.FS('writeFile', inputFileName, await fetchFile(selectedFile))
+
+            // 情報を抽出する
+            const logs: string[] = []
+            ffmpeg.setLogger(({ message }) => logs.push(message))
+            try {
+                await ffmpeg.run('-i', inputFileName)
+            } catch (e) {
+                // run はエラーになるがログは出るので無視して良い
+            }
+
+            const videoLog = logs.find(msg => msg.includes('Stream') && msg.includes('Video'))
+            if (videoLog) {
+                const resMatch = videoLog.match(/(\d{2,5})x(\d{2,5})/)
+                const bitrateMatch = videoLog.match(/(\d+) kb\/s/)
+
+                if (resMatch) {
+                    originalResolution.value = `${resMatch[1]}x${resMatch[2]}`
+                }
+                if (bitrateMatch) {
+                    originalBitrate.value = `${bitrateMatch[1]} kb/s`
+                }
+            }
+
+            ffmpeg.FS('unlink', inputFileName)
+        } catch (err) {
+            console.error('メタ情報の取得失敗:', err)
+        }
     }
 }
 
@@ -124,18 +173,12 @@ const handleDrop = (e: DragEvent) => {
         const droppedFile = e.dataTransfer.files[0]
         if (droppedFile.type.startsWith('video/')) {
             file.value = droppedFile
+            handleFileChange()
         } else {
             alert('動画ファイルをドロップしてください')
         }
     }
 }
-
-const ffmpeg = createFFmpeg({
-    log: true,
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
-})
-
-const loading = ref(false)
 
 const startCompression = async () => {
     if (!file.value) return
@@ -157,14 +200,6 @@ const startCompression = async () => {
         const [width, height] = res.includes('x') ? res.split('x') : ['1280', '720']
         const bitrateValue = bitrate.value || '1500k'
 
-        console.log('FFmpegコマンド:', [
-            '-i', inputFileName,
-            '-vf', `scale=${width}:${height}`,
-            '-b:v', bitrateValue,
-            '-preset', 'veryfast',
-            outputFileName
-        ])
-        
         await ffmpeg.run(
             '-i', inputFileName,
             '-c:v', 'libx264',
@@ -184,7 +219,6 @@ const startCompression = async () => {
         loading.value = false
     }
 }
-
 </script>
 
 <style scoped>
