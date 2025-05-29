@@ -9,12 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ffmpeg/core": "^0.10.0",
+    "@ffmpeg/ffmpeg": "^0.10.1",
+    "@ffmpeg/util": "^0.12.2",
     "sass": "^1.89.0",
     "vue": "^3.5.13",
     "vuetify": "^3.8.7"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.3",
+    "typescript": "^5.8.3",
     "vite": "^6.3.5"
   }
 }
